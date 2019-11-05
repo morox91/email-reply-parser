@@ -33,9 +33,13 @@ object EmailReplyParser {
   }
 
   private val OnLine = """(?smi)(?!On.*On\s.+?wrote:)On\s.+?wrote:\s*$""".r
+  private val OnLinePl = """(?smi)(?!.*<\S+@\S+\.\S+> napisał\(a\):)[^\n]*<\S+@\S+\.\S+>\s+napisał\(a\):\s*$""".r
   private val Signature = s"""(?smi)(^Sent from (\\w+\\s*){1,5}\\.?\\s*$$)|^(--|__|-\\w)""".r
   private val QuoteHeader = """(?smi)^\s*On.*?wrote:\s*$""".r
+  private val QuoteHeader2 = """(?smi)^.*<\S+@\S+\.\S+> napisał\(a\):\s*$""".r
   private val Quoted = """(?smi)^\s*>""".r
+  private val QuotedWp = """(?smi)^\s{8,}""".r
+  private val OnetQuote = """(?smi)^\x{00A0}.*\x{00A0}$""".r
 }
 
 class EmailReplyParser(val text: String) {
@@ -53,10 +57,14 @@ class EmailReplyParser(val text: String) {
     var fragment: Option[Fragment] = None
     var foundVisible = false
 
-    for (reverseLine <- OnLine.replaceAllIn(text.replace("\r\n", "\n"), _.group(0).replace("\n", " ")).reverse.lines) {
+    val onLineReplaced = OnLine.replaceAllIn(text.replace("\r\n", "\n"), _.group(0).replace("\n", " "))
+    val onLinePlReplaced = OnLinePl.replaceAllIn(onLineReplaced, _.group(0).replace("\n", " "))
+    val onetQuoteRemoved = OnetQuote.replaceAllIn(onLinePlReplaced, "")
+
+    for (reverseLine <- onetQuoteRemoved.reverse.lines) {
       val line = reverseLine.reverse
-      val isQuoted = Quoted.findFirstIn(line).isDefined
-      val isQuoteHeader = QuoteHeader.findFirstIn(line).isDefined
+      val isQuoted = Quoted.findFirstIn(line).isDefined || QuotedWp.findFirstIn(line).isDefined
+      val isQuoteHeader = QuoteHeader.findFirstIn(line).isDefined || QuoteHeader2.findFirstIn(line).isDefined
       val isEmpty = line.trim.isEmpty
       if (isEmpty) checkSignature()
       fragment = fragment collect {

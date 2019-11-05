@@ -1,6 +1,11 @@
 package net.methvin.email
 
+import com.sun.mail.imap.IMAPFolder
+import javax.mail.internet.MimeMultipart
 import org.specs2.mutable.Specification
+import javax.mail.{Folder, Multipart, Session}
+
+import collection.JavaConverters._
 
 class EmailReplyParserSpec extends Specification {
   "EmailReplyParser" should {
@@ -285,6 +290,142 @@ class EmailReplyParserSpec extends Specification {
       result must contain("telnet 127.0.0.1 52698")
       result must contain("This should connect to TextMate")
     }
+
+    "gmail" in {
+      val body =
+        """It's working!
+          |
+          |pon., 4 lis 2019 o 11:53 Maciej Maroszczyk <maciej.maroszczyk@senti1.com>
+          |napisał(a):
+          |
+          |> Test email content
+          |>
+          |> --
+          |> Maciek
+          |>""".stripMargin
+      val result = parse(body)
+
+      result must_== "It's working!"
+    }
+
+    "gmail (short name)" in {
+      val body =
+        """It's working!
+          |
+          |pon., 4 lis 2019 o 11:53 Maciej <maciej.maroszczyk@senti1.com> napisał(a):
+          |
+          |> Test email content
+          |>
+          |> --
+          |> Maciek
+          |>""".stripMargin
+      val result = parse(body)
+
+      result must_== "It's working!"
+    }
+
+    "onet" in {
+      val body =
+        """Some reply
+          | 
+          |W dniu 2019-11-04 13:05:17 użytkownik Maciej Maroszczyk <maciej.maroszczyk@senti1.com> napisał:
+          |Test email content
+          | 
+          |--
+          |Maciek
+          | """.stripMargin
+      val result = parse(body)
+
+      result must_== "Some reply"
+    }
+
+    "thunderbird" in {
+      val body =
+        """Long time no see!
+          |
+          |On 04.11.2019 15:17, Maciej Maroszczyk wrote:
+          |> Hello my friend!
+          |>
+          |> --
+          |> Maciek""".stripMargin
+      val result = parse(body)
+
+      result must_== "Long time no see!"
+    }
+
+    "wp.pl" in {
+      // whole reply in the first line, quote indicated by spaces
+      val body =
+        """No elo
+          |
+          |
+          |
+          |
+          |
+          |        Dnia 4 listopada 2019 15:24 Maciej Maroszczyk &lt;maciej.maroszczyk@senti1.com&gt; napisał(a):
+          |
+          |
+          |
+          |         Siema elo 3 2 0  -- Pozdrawiam, Maciek""".stripMargin
+      val result = parse(body)
+
+      result must_== "No elo"
+    }
+
+    "apple mail" in {
+      val body =
+        """Ohehehhehe
+          |sadjhfsdjfhsjfs
+          |
+          |
+          |blasjljdd
+          |
+          |Pozdrawiam
+          |Olga
+          |
+          |On Mon, Nov 4, 2019 at 3:31 PM Maciej Maroszczyk <
+          |maciej.maroszczyk@senti1.com> wrote:
+          |
+          |> I need it for email parsing investigation.
+          |>
+          |> --
+          |> Maciek
+          |>
+          |
+          |
+          |--
+          |
+          |Olga Springer
+          |
+          |Head of Product
+          |
+          |+48 505 465 217 <+48+505+465+217>
+          |
+          |olga.springer@sentione.com
+          |
+          |sentione.com
+          |------------------------------
+          |
+          |SentiOne Sp. z o.o. ul. Lęborska 3B/3.28, 80-386 Gdańsk, Poland NIP:
+          |PL5252520285
+          |
+          |WARSAW - MUNICH - GDANSK - PRAGUE - BUDAPEST - EINDHOVEN
+          |
+          |Facebook <https://facebook.com/sentioneEN> / LinkedIn
+          |<https://www.linkedin.com/company/sentione> / Twitter
+          |<https://twitter.com/onesenti>""".stripMargin
+      val result = parse(body)
+
+      result must_== """Ohehehhehe
+                       |sadjhfsdjfhsjfs
+                       |
+                       |
+                       |blasjljdd
+                       |
+                       |Pozdrawiam
+                       |Olga""".stripMargin
+    }
+
   }
 
   def parse(s: String, sigs: Boolean = false): String = EmailReplyParser.parseReply(s, includeSignatures = sigs)
