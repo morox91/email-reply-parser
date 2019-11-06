@@ -40,6 +40,7 @@ object EmailReplyParser {
   private val Quoted = """(?smi)^\s*>""".r
   private val QuotedWp = """(?smi)^\s{8,}""".r
   private val OnetQuote = """(?smi)^\x{00A0}.*\x{00A0}$""".r
+  private val OutlookQuote = """(?smi)^From:.*Sent:.*To:.*Subject:.*$""".r
 }
 
 class EmailReplyParser(val text: String) {
@@ -60,8 +61,9 @@ class EmailReplyParser(val text: String) {
     val onLineReplaced = OnLine.replaceAllIn(text.replace("\r\n", "\n"), _.group(0).replace("\n", " "))
     val onLinePlReplaced = OnLinePl.replaceAllIn(onLineReplaced, _.group(0).replace("\n", " "))
     val onetQuoteRemoved = OnetQuote.replaceAllIn(onLinePlReplaced, "")
+    val outlookQuoteRemoved = OutlookQuote.replaceAllIn(onetQuoteRemoved, "")
 
-    for (reverseLine <- onetQuoteRemoved.reverse.lines) {
+    for (reverseLine <- outlookQuoteRemoved.reverse.lines) {
       val line = reverseLine.reverse
       val isQuoted = Quoted.findFirstIn(line).isDefined || QuotedWp.findFirstIn(line).isDefined
       val isQuoteHeader = QuoteHeader.findFirstIn(line).isDefined || QuoteHeader2.findFirstIn(line).isDefined

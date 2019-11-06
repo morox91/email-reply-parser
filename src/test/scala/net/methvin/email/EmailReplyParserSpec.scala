@@ -426,6 +426,54 @@ class EmailReplyParserSpec extends Specification {
                        |Olga""".stripMargin
     }
 
+
+    "outlook" in {
+      val body =
+        """Reply from outlook
+          |
+          |
+          |
+          |Bla bla bla
+          |
+          |*         Point 1
+          |
+          |*         Point 2
+          |
+          |
+          |
+          |
+          |
+          |
+          |
+          |From: Maciej Maroszczyk [mailto:maciej.maroszczyk@senti1.com]
+          |Sent: Monday, November 4, 2019 1:05 PM
+          |To: maciej276@op.pl
+          |Subject: Test email
+          |
+          |
+          |
+          |Test email content
+          |
+          |
+          |
+          |--
+          |
+          |Maciek
+          |
+          |""".stripMargin
+
+      val result = parse(body)
+
+      result must_== """Reply from outlook
+                       |
+                       |
+                       |
+                       |Bla bla bla
+                       |
+                       |*         Point 1
+                       |
+                       |*         Point 2""".stripMargin
+    }
   }
 
   def parse(s: String, sigs: Boolean = false): String = EmailReplyParser.parseReply(s, includeSignatures = sigs)
