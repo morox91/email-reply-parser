@@ -67,7 +67,7 @@ class EmailReplyParser(val text: String) {
       val line = reverseLine.reverse
       val isQuoted = Quoted.findFirstIn(line).isDefined || QuotedWp.findFirstIn(line).isDefined
       val isQuoteHeader = QuoteHeader.findFirstIn(line).isDefined || QuoteHeader2.findFirstIn(line).isDefined
-      val isEmpty = line.trim.isEmpty
+      val isEmpty = if (line.trim.isEmpty) true else false
       if (isEmpty) checkSignature()
       fragment = fragment collect {
         case f if f.quoted == isQuoted || f.quoted && (isEmpty || isQuoteHeader) =>
